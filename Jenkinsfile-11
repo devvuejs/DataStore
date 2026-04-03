@@ -70,19 +70,22 @@ pipeline {
         """
       }
     }
-    stage("loggingin & pushing docker image") {
-      steps {
-        sh """
+     stage("loggingin & pushing docker image") {
+       steps {
+          sh '''
           echo "-------- Logging To DockerHub --------"
-          docker login -u $DOCKERHUB_CREDENTIALS_USR --password $DOCKERHUB_CREDENTIALS_PSW
+          echo "$DOCKERHUB_CREDENTIALS_PSW" | docker login -u "$DOCKERHUB_CREDENTIALS_USR" --password-stdin
+    
           echo "-------- DockerHub Login Successful --------"
-
+    
           echo "-------- Pushing Docker Image To DockerHub --------"
           docker push 8072388539/datastore:"${App_Version}"
+    
           echo "-------- Docker Image Pushed Successfully --------"
-        """
-      }
-    }
+        '''
+   }
+ }
+    
     stage("cleanup") {
       steps {
         sh """
