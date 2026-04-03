@@ -1,6 +1,11 @@
 pipeline {
   agent any
 
+  parameters {
+     string(name: "App_Version", description: "provide application version")
+  }
+
+
   stages {
     stage("checkout") {
       steps {
