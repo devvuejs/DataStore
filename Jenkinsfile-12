@@ -86,7 +86,7 @@ pipeline {
 
           sh """
             echo "-------- Pushing Docker Image --------"
-            docker push 8072388539/datastore:${params.App_Version}
+            docker push devdeocker/datastore:${params.App_Version}
             echo "-------- Docker Image Pushed Successfully --------"
           """
         }
