@@ -71,7 +71,7 @@ pipeline {
       }
     }
      stage("loggingin & pushing docker image") {
-  steps {
+    steps {
     sh '''
       echo "-------- Logging To DockerHub --------"
 
