@@ -81,7 +81,7 @@ pipeline {
       passwordVariable: 'DOCKER_PASS'
     )]) {
 
-      sh '''
+      sh """
         echo "-------- Logging To DockerHub --------"
 
         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
@@ -89,10 +89,10 @@ pipeline {
         echo "-------- DockerHub Login Successful --------"
 
         echo "-------- Pushing Docker Image To DockerHub --------"
-        docker push 8072388539/datastore:"${params.App_Version}"
+        docker push 8072388539/datastore:${params.App_Version}
 
         echo "-------- Docker Image Pushed Successfully --------"
-      '''
+      """
     }
   }
 }
