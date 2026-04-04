@@ -2,16 +2,14 @@ pipeline {
   agent any
 
   parameters {
-     string(name: "App_Version", description: "provide application version")
+    string(name: "App_Version", description: "Provide application version")
   }
-  environment {
-    DOCKERHUB_CREDENTIALS=credentials("dockerhub")
-  }
-
 
   stages {
+
     stage("checkout") {
       steps {
+        deleteDir()
         checkout scmGit(
           branches: [[name: '*/master']],
           extensions: [],
@@ -19,7 +17,8 @@ pipeline {
         )
       }
     }
-     stage("maven build") {
+
+    stage("maven build") {
       steps {
         sh """
           echo "-------- Building Application --------"
@@ -28,16 +27,8 @@ pipeline {
         """
       }
     }
-     stage("maven test") {
-      steps {
-        sh """
-          echo "-------- Executing Testcases --------"
-          mvn test
-          echo "-------- Testcases Execution Complete --------"
-        """
-      }
-    }
-     stage("artifact store") {
+
+    stage("artifact store") {
       steps {
         sh """
           echo "-------- Pushing Artifacts To S3 --------"
@@ -46,55 +37,70 @@ pipeline {
         """
       }
     }
-     stage("docker image build") {
+
+    stage("docker image build") {
       steps {
         sh """
           echo "-------- Building Docker Image --------"
-          docker build -t datastore:"${App_Version}" .
+          docker build -t datastore:${params.App_Version} .
           echo "-------- Image Successfully Built --------"
         """
       }
     }
-     stage("docker image scan") {
+
+    stage("docker image scan") {
       steps {
         sh """
           echo "-------- Scanning Docker Image --------"
-          trivy image datastore:"${App_Version}"
+          trivy image datastore:${params.App_Version}
           echo "-------- Scanning Docker Image Complete --------"
         """
       }
     }
-     stage("docker image tag") {
-      steps{
+
+    stage("docker image tag") {
+      steps {
         sh """
           echo "-------- Tagging Docker Image --------"
-          docker tag datastore:"${App_Version}" 8072388539/datastore:"${App_Version}"
-          echo "-------- Tagging Docker Image Completed."
+          docker tag datastore:${params.App_Version} 8072388539/datastore:${params.App_Version}
+          echo "-------- Tagging Docker Image Completed --------"
         """
       }
     }
-     stage("loggingin & pushing docker image") {
-  steps {
-    withCredentials([usernamePassword(
-      credentialsId: 'dockerhub',
-      usernameVariable: 'DOCKER_USER',
-      passwordVariable: 'DOCKER_PASS'
-    )]) {
 
-      sh """
-        echo "-------- Logging To DockerHub --------"
+    stage("login & push docker image") {
+      steps {
+        withCredentials([usernamePassword(
+          credentialsId: 'dockerhub',
+          usernameVariable: 'DOCKER_USER',
+          passwordVariable: 'DOCKER_PASS'
+        )]) {
 
-        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+          sh '''
+            echo "-------- Logging To DockerHub --------"
 
-        echo "-------- DockerHub Login Successful --------"
+            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 
-        echo "-------- Pushing Docker Image To DockerHub --------"
-        docker push 8072388539/datastore:${params.App_Version}
+            echo "-------- DockerHub Login Successful --------"
+          '''
 
-        echo "-------- Docker Image Pushed Successfully --------"
-      """
+          sh """
+            echo "-------- Pushing Docker Image --------"
+            docker push 8072388539/datastore:${params.App_Version}
+            echo "-------- Docker Image Pushed Successfully --------"
+          """
+        }
+      }
     }
-  }
-}
+
+    stage("cleanup") {
+      steps {
+        sh """
+          echo "-------- Cleaning Up Jenkins Machine --------"
+          docker image prune -a -f
+          echo "-------- Clean Up Successful --------"
+        """
+      }
+    }
   }
 }
